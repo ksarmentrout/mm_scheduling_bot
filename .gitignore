@@ -1,0 +1,10 @@
+campaign_contact_lists/
+cached_schedules/
+.idea/
+nps_campaign_helper.py
+__pycache__/
+*.pyc
+*.json
+follow_up_email_generator.py
+directories.py
+
