@@ -1,10 +1,22 @@
+"""
+~ NOTES ~
+
+directories.py is for email and Google Calendar DICTIONARIES.
+utils.py is for FUNCTIONS
+variables.py is for OTHER VARIABLES (mostly for Google Sheets)
+"""
+
 import re
 import os
-from datetime import datetime, timedelta
+import datetime
+import time
 
 from httplib2 import Http
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
+
+import directories as dr
+import variables as vrs
 
 
 def parse_webhook_json(added_json):
@@ -41,14 +53,14 @@ def parse_time(original_dict):
 def google_sheets_login():
     # Get credentials from Google Developer Console
     scopes = ['https://www.googleapis.com/auth/spreadsheets']
-    # json_path = "/Users/keatonarmentrout/Desktop/Techstars/Mentor Madness/scheduling_bot/MM-Scheduler-61cb94ec8350.json"
-    credentials = ServiceAccountCredentials.from_json_keyfile_name('functions/MM_Bot-32fa78cfd51b.json', scopes=scopes)
+    json_path = vrs.LOCAL_PATH + "scheduling_bot/MM-Scheduler-61cb94ec8350.json"
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(json_path, scopes=scopes)
 
     # Authenticate using Http object
     http_auth = credentials.authorize(Http())
 
     # Build Google API response object for sheets
-    sheets_api = build('sheets', 'v4', credentials=credentials)
+    sheets_api = build('sheets', 'v4', http=http_auth)
 
     return sheets_api
 
@@ -57,94 +69,25 @@ def google_calendar_login():
     # Get credentials from Google Developer Console
     scopes = ['https://www.googleapis.com/auth/calendar']
 
-    # NOTE: The 'MM-Scheduler' service account is owned by the mentor.madness.bot. The 'MM-Bot' service account
-    # is owned by my personal email.
-    json_path = "/Users/keatonarmentrout/Desktop/Techstars/Mentor Madness/scheduling_bot/MM-Scheduler-61cb94ec8350.json"
+    # NOTE: The 'MM-Scheduler' service account is owned by mentor.madness.bot@gmail.com
+    json_path = vrs.LOCAL_PATH + "scheduling_bot/MM-Scheduler-61cb94ec8350.json"
     credentials = ServiceAccountCredentials.from_json_keyfile_name(json_path, scopes=scopes)
 
     # Authenticate using Http object
     http_auth = credentials.authorize(Http())
 
     # Build Google API response object for sheets
-    sheets_api = build('calendar', 'v3', credentials=credentials)
+    sheets_api = build('calendar', 'v3', http=http_auth)
 
     return sheets_api
 
 
 def make_cell_range(start_time, end_time):
-    start_bound = spreadsheet_time_mapping.get(start_time)
-    end_bound = spreadsheet_time_mapping.get(end_time)
+    start_bound = vrs.spreadsheet_time_mapping.get(start_time)
+    end_bound = vrs.spreadsheet_time_mapping.get(end_time)
     end_bound = str(int(end_bound) - 1)
-    cell_range = start_col + start_bound + ':' + end_col + end_bound
+    cell_range = vrs.start_col + start_bound + ':' + vrs.end_col + end_bound
     return cell_range
-
-
-gmail_credentials = {
-    'name': os.environ['mm_bot_gmail_name'],
-    'password': os.environ['mm_bot_gmail_password']
-}
-
-spreadsheet_id = '18gb1ehs9-hmXbIkKaTcLUvurzAJzpjDiXgNFZeazrNA'
-
-room_mapping = {
-        1: {'name': 'Glacier', 'mentor_col': 1, 'check_range': [2, 3]},
-        2: {'name': 'Harbor', 'mentor_col': 4, 'check_range': [5, 6]},
-        3: {'name': 'Lagoon', 'mentor_col': 7, 'check_range': [8, 9]},
-        4: {'name': 'Abyss', 'mentor_col': 10, 'check_range': [11, 12]},
-        5: {'name': 'Classroom', 'mentor_col': 13, 'check_range': [14, 15]},
-        6: {'name': 'Across Hall', 'mentor_col': 16, 'check_range': [17, 18]}
-    }
-
-mentor_columns = [1, 4, 7, 10, 13, 16]
-
-full_range = 'A1:S20'
-
-sheet_options = [
-        'Mon 2/13', 'Tues 2/14', 'Wed 2/15', 'Thurs 2/16', 'Fri 2/17',
-        'Mon 2/20', 'Tues 2/21', 'Wed 2/22', 'Thurs 2/23', 'Fri 2/24',
-        'Mon 2/27', 'Tues 2/28', 'Wed 3/1', 'Thurs 3/2', 'Fri 3/3'
-    ]
-
-spreadsheet_time_mapping = {
-    '9:00': '2',
-    '9:30': '3',
-    '10:00': '4',
-    '10:30': '5',
-    '11:00': '6',
-    '11:30': '7',
-    '12:00': '8',
-    '12:30': '9',
-    '1:00': '10',
-    '1:30': '11',
-    '2:00': '12',
-    '2:30': '13',
-    '3:00': '14',
-    '3:30': '15',
-    '4:00': '16',
-    '4:30': '17',
-    '5:00': '18',
-    '5:30': '19',
-    '6:00': '20'
-}
-
-start_col = 'A'
-end_col = 'S'
-
-headers = [
-    'room1_mentor', 'room1_company', 'room1_associate',
-    'room2_mentor', 'room2_company', 'room2_associate',
-    'room3_mentor', 'room3_company', 'room3_associate',
-    'room4_mentor', 'room4_company', 'room4_associate',
-    'room5_mentor', 'room5_company', 'room5_associate',
-    'room6_mentor', 'room6_company', 'room6_associate',
-]
-
-# This is based on the number of rooms. If there are 6 rooms,
-# each room is made up of 3 columns. Then including the time
-# column on the left makes row_length = 3 * (number of rooms) + 1
-row_length = 19
-
-value_input_option = 'RAW'
 
 
 def make_time_range(start_time):
@@ -162,12 +105,48 @@ def make_time_range(start_time):
 
     start_time = start_time[:start_time.find(' ')]
 
-    start_obj = datetime.strptime(start_time, '%H:%M')
-    end_obj = start_obj + timedelta(minutes=30)
+    start_obj = datetime.datetime.strptime(start_time, '%H:%M')
+    end_obj = start_obj + datetime.timedelta(minutes=30)
     end_time = end_obj.strftime('%H:%M')
 
     time_range = start_time + '-' + end_time
     return time_range
+
+
+def get_next_day():
+    today = datetime.date.today()
+    month = today.month
+    day = today.day
+
+    # Get next business day
+    if today.isoweekday() in (5, 6, 7):
+        today += datetime.timedelta(days=8 - today.isoweekday())
+    else:
+        today += datetime.timedelta(1)
+
+    match_day = str(month) + '/' + str(day)
+    return match_day
+
+
+def get_today(skip_weekends=False):
+    today = datetime.date.today()
+    month = today.month
+    day = today.day
+
+    if skip_weekends:
+        # Get next business day
+        if today.isoweekday() in (6, 7):
+            today += datetime.timedelta(days=8 - today.isoweekday())
+
+    match_day = str(month) + '/' + str(day)
+    return match_day
+
+
+def day_to_filename(day):
+    csv_name = day.replace(' ', '_').replace('/', '_') + '.csv'
+    csv_name = '/cached_schedules/' + csv_name
+    csv_name = vrs.LOCAL_PATH + csv_name
+    return csv_name
 
 
 def process_name(original_name):
@@ -231,4 +210,3 @@ def process_name(original_name):
     else:
         name = 'not_found'
     return name
-

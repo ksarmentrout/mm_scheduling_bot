@@ -3,6 +3,7 @@ import smtplib
 from email.mime.text import MIMEText
 
 import directories as dr
+import variables as vrs
 import daily_notice
 import utils
 
@@ -211,7 +212,7 @@ def make_daily_mentor_schedules(mentor_dict):
         # Save message to a .txt file
         dirname = day.replace(' ', '_').replace('/', '_')
         txt_name = key.replace(' ', '_').strip() + '.txt'
-        filename = dr.LOCAL_PATH + '/mentor_schedules/' + dirname + '/' + txt_name
+        filename = vrs.LOCAL_PATH + '/mentor_schedules/' + dirname + '/' + txt_name
         with open(filename, 'w') as file:
             file.write(msg)
 
@@ -232,14 +233,14 @@ def make_mentor_packet_schedules(mentor_dict):
         # Save message to a .html file
         dirname = day.replace(' ', '_').replace('/', '_')
         txt_name = key.replace(' ', '_').strip() + '.html'
-        filename = dr.LOCAL_PATH + '/mentor_packet_schedules/' + dirname + '/' + txt_name
+        filename = vrs.LOCAL_PATH + '/mentor_packet_schedules/' + dirname + '/' + txt_name
         with open(filename, 'w') as file:
             file.write(msg)
 
 
 def email_login():
     # Get login credentials from stored file
-    login_file = dr.LOCAL_PATH +'mm_bot_gmail_login.txt'
+    login_file = vrs.LOCAL_PATH +'mm_bot_gmail_login.txt'
     file = open(login_file, 'r')
     reader = csv.reader(file)
     row = next(reader)

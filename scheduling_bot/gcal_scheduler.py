@@ -3,9 +3,10 @@ import os
 import re
 
 import directories as dr
+import variables as vrs
 
-os.environ['mm_bot_gmail_name'] = dr.mm_bot_gmail_name
-os.environ['mm_bot_gmail_password'] = dr.mm_bot_gmail_password
+os.environ['mm_bot_gmail_name'] = vrs.mm_bot_gmail_name
+os.environ['mm_bot_gmail_password'] = vrs.mm_bot_gmail_password
 
 import utils
 import email_sender
@@ -17,15 +18,10 @@ def booking_setup(raw_json, custom_range=None):
 
     meeting = utils.parse_webhook_json(raw_json)
 
-    # Set spreadsheet ID
-    spreadsheet_id = utils.spreadsheet_id  # This is the MM spreadsheet
-    # spreadsheet_id = '1qdAgkuyAl6DRV3LRn-zheWSiD-r4JIya8Ssr6-DswY4'  # This is my test spreadsheet
-
-    # Set room mapping
-    room_mapping = utils.room_mapping
-
-    # Set query options
-    sheet_options = utils.sheet_options
+    # Set variables
+    spreadsheet_id = vrs.spreadsheet_id
+    room_mapping = vrs.room_mapping
+    sheet_options = vrs.sheet_options
 
     # Set day to retrieve
     sheet_names = [x for x in sheet_options if meeting['day'] in x]
@@ -51,8 +47,8 @@ def booking_setup(raw_json, custom_range=None):
 
     # Pad sheet to be the appropriate length in each row
     for idx, new_sheet_row in enumerate(new_sheet):
-        if len(new_sheet_row) < utils.row_length:
-            new_sheet[idx].extend([''] * (utils.row_length - len(new_sheet_row)))
+        if len(new_sheet_row) < vrs.row_length:
+            new_sheet[idx].extend([''] * (vrs.row_length - len(new_sheet_row)))
 
     return_dict = {
         'new_sheet': new_sheet,
@@ -97,7 +93,7 @@ def add_cal_events(event_list):
         name = meeting.get('name')
         if not name:
             continue
-        name = email_sender.process_name(name)
+        name = utils.process_name(name)
 
         cal_id = dr.calendar_id_dir[name]
 
@@ -122,12 +118,12 @@ def delete_cal_events(event_list):
             name = meeting.get('name')
             if not name:
                 continue
-            name = email_sender.process_name(name)
+            name = utils.process_name(name)
             cal_id = dr.calendar_id_dir[name]
 
             # Delete event
             deleted_event = cal_api.events().delete(calendarId=cal_id, eventId=event_id).execute()
-            # print('deleted event: ' + deleted_event['summary'])
+            print('deleted event: ' + deleted_event['summary'])
 
 
 def check_for_cal_event(cal_api, meeting, return_event_id=False):
@@ -135,7 +131,7 @@ def check_for_cal_event(cal_api, meeting, return_event_id=False):
     if not name:
         return False if return_event_id else None
 
-    name = email_sender.process_name(name)
+    name = utils.process_name(name)
 
     cal_id = dr.calendar_id_dir[name]
     if not cal_id:
